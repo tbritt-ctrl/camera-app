@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="R6 Settings">
+<meta name="theme-color" content="#0f1115">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>R6 II Settings</title>
+<script>
+/* ================= PRESET DATA – edit here (see README.md) =================
+ ev: scene brightness as EV at ISO 100 (sun 15, overcast 12, shade 9-10, indoor 5-8).
+ photo.shutter: the shutter (seconds) the subject needs. aperture: preferred f-number (min 4).
+ The app calculates ISO from ev + shutter + aperture. */
+const GEAR = { body:"Canon EOS R6 Mark II", lens:"RF 24-105mm f/4L", maxAperture:4, isoMin:100, isoMax:25600, isoCleanMax:6400 };
+const CONDITIONS = [
+ {id:"sun",   name:"☀️ Bright sun",      ev:15, tip:"Lots of light: drop to ISO 100 and stop down. For video you need an ND filter (ND8–ND64) to keep the 180° shutter."},
+ {id:"overcast",name:"☁️ Overcast",       ev:12, tip:"Soft even light, great for riders. Watch for a blown-out white sky; expose for faces/bikes."},
+ {id:"forest",name:"🌲 Forest / shade",   ev:9,  tip:"Forest: push ISO to 3200–6400, the R6 II is clean there. Dappled light – expose for the rider, not the bright patches."},
+ {id:"golden",name:"🌅 Golden hour / dusk",ev:10, tip:"Light falls fast – re-check every few minutes. Set WB to Daylight/5200K to keep the warm tones."},
+ {id:"in_bright",name:"💡 Indoor bright", ev:8,  tip:"Set WB manually (Kelvin) to avoid colour shifts. Watch for LED flicker – enable Anti-flicker / use H-Flicker in video."},
+ {id:"in_med",name:"🏠 Indoor medium",    ev:7,  tip:"f/4 is the widest – ISO does the heavy lifting. Up to 12800 is usable in RAW with denoise."},
+ {id:"in_low",name:"🕯️ Indoor low light", ev:5,  tip:"Very dim for an f/4 zoom. Accept slower shutter for static subjects, or add light. Use AI/Lightroom denoise on RAWs."}
+];
+const SUBJECTS = [
+ {id:"mtb", name:"🚵 Fast action / MTB",
+  photo:{shutter:1/2000, minShutter:1/1000, aperture:4, drive:"H+ Electronic (40 fps) for the key moment, or H Mechanical (12 fps) under LED/artificial light to avoid rolling-shutter skew", ibis:"IS On (Continuous) – helps framing, irrelevant at these speeds"},
+  video:{res:"4K 50p (or 60p) – 1080 100p/120p for slow-mo jumps", is:"IBIS On + Movie digital IS Off (keeps full frame, no crop)"},
+  af:{servo:"Servo AF", detect:"Vehicles (often locks on bike+rider) – switch to People if it grabs the bike over the rider's head", eye:"Eye detection: On (helmets/goggles often block it – it falls back to head/body)", area:"Whole area tracking, or Flexible Zone 1 placed where the rider enters", case:"Case 2 (keep tracking through trees/obstacles) or Case 4 (sudden accel/decel on drops)", pre:"Pre-continuous AF: On"}},
+ {id:"pan", name:"↔️ MTB panning",
+  photo:{shutter:1/60, minShutter:1/30, aperture:8, drive:"H Mechanical (12 fps) – smooth swing, follow through", ibis:"IS On (Continuous) – R6 II detects panning and only stabilises vertically"},
+  video:{res:"4K 25p/50p, smooth gimbal-style tracking", is:"IBIS On (Movie digital IS Enhanced only if handheld & you accept the crop)"},
+  af:{servo:"Servo AF", detect:"Vehicles or People", eye:"Eye detection: On", area:"Zone AF or Flexible Zone on the rider's line", case:"Case 1 (versatile) – tracking sensitivity -1 so it doesn't jump to the background", pre:"Pre-continuous AF: On"}},
+ {id:"portrait", name:"🙂 Portrait / people",
+  photo:{shutter:1/250, minShutter:1/125, aperture:4, drive:"Single or L (low continuous) for expressions", ibis:"IS On"},
+  video:{res:"4K 25p (cinematic) or 4K 50p", is:"IBIS On"},
+  af:{servo:"Servo AF (One Shot for very still sitters)", detect:"People", eye:"Eye detection: On (Auto eye)", area:"Whole area tracking", case:"Case 1", pre:"Pre-continuous AF: Off (saves battery)"}},
+ {id:"landscape", name:"🏔️ Landscape",
+  photo:{shutter:1/125, minShutter:1/15, aperture:8, drive:"Single, 2-sec self-timer on a tripod", ibis:"IS On handheld; Off on a tripod"},
+  video:{res:"4K 25p, or 4K 50p for smooth motion", is:"IBIS On handheld; Off on tripod"},
+  af:{servo:"One Shot AF", detect:"None (no subject)", eye:"Eye detection: Off", area:"Spot / 1-point AF ~1/3 into the scene", case:"n/a (One Shot)", pre:"Pre-continuous AF: Off"}},
+ {id:"general", name:"📷 General / walkaround",
+  photo:{shutter:1/250, minShutter:1/60, aperture:5.6, drive:"L or H Mechanical", ibis:"IS On (Continuous)"},
+  video:{res:"4K 25p or 50p", is:"IBIS On"},
+  af:{servo:"Servo AF", detect:"Auto (People priority)", eye:"Eye detection: Auto", area:"Whole area tracking", case:"Case 1", pre:"Pre-continuous AF: On"}}
+];
+const VIDEO_PROFILE = {
+ standard:"Standard picture style (or Neutral) – no grading needed, quick to post",
+ log:"Canon Log 3 (10-bit H.265, min ISO 800) – most dynamic range, needs grading. Great for bright sun/forest contrast"
+};
+/* ================= end of preset data ================= */
+</script>
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--chip:#252a33;--acc:#ff8a1f;--txt:#eef1f5;--mut:#9aa3af}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.4 -apple-system,system-ui,sans-serif;padding:calc(env(safe-area-inset-top) + 12px) 14px calc(env(safe-area-inset-bottom) + 24px)}
+h1{font-size:19px;margin:0 0 2px}.sub{color:var(--mut);font-size:13px;margin-bottom:12px}
+.toggle{display:flex;background:var(--chip);border-radius:14px;padding:4px;margin-bottom:14px}
+.toggle button{flex:1;border:0;background:none;color:var(--txt);font-size:17px;font-weight:600;padding:12px;border-radius:10px}
+.toggle button.on{background:var(--acc);color:#111}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid transparent;background:var(--chip);color:var(--txt);font-size:15px;padding:12px 14px;border-radius:12px;min-height:48px}
+.chip.on{border-color:var(--acc);background:#3a2a18}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-top:16px}
+.card h3{margin:0 0 8px;font-size:15px;color:var(--acc)}
+.big{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.big div{background:var(--chip);border-radius:12px;padding:10px 6px;text-align:center}
+.big b{display:block;font-size:20px}.big span{font-size:11px;color:var(--mut)}
+.row{display:flex;gap:10px;padding:7px 0;border-top:1px solid #2a2f38;font-size:14px}
+.row .k{color:var(--mut);min-width:96px}
+.tip{background:#1f2a1f;border-left:3px solid #6fd06f;padding:10px;border-radius:8px;font-size:14px;margin-top:10px}
+.warn{color:#ffcf6b}.empty{color:var(--mut);text-align:center;padding:20px}
+.prof{display:flex;gap:8px;margin:8px 0}
+</style></head><body>
+<h1>R6 II Settings</h1><div class="sub" id="gear"></div>
+<div class="toggle"><button id="m-photo" class="on">📷 Photo</button><button id="m-video">🎥 Video</button></div>
+<div id="profWrap" style="display:none"><h2>Picture profile</h2><div class="chips prof"><button class="chip on" data-p="standard">Standard</button><button class="chip" data-p="log">Canon Log 3</button></div></div>
+<h2>Conditions</h2><div class="chips" id="conds"></div>
+<h2>Subject</h2><div class="chips" id="subs"></div>
+<div id="out"><div class="card empty">Pick a condition and a subject</div></div>
+<script>
+const S={mode:"photo",cond:null,sub:null,prof:"standard"};
+const $=id=>document.getElementById(id);
+$("gear").textContent=GEAR.body+" · "+GEAR.lens+" · Manual · RAW";
+function chips(el,list,key){el.innerHTML="";list.forEach(o=>{const b=document.createElement("button");b.className="chip"+(S[key]===o.id?" on":"");b.textContent=o.name;b.onclick=()=>{S[key]=o.id;save();render()};el.appendChild(b)})}
+const STOPS=[1/8000,1/6400,1/5000,1/4000,1/3200,1/2500,1/2000,1/1600,1/1250,1/1000,1/800,1/640,1/500,1/400,1/320,1/250,1/200,1/160,1/125,1/100,1/80,1/60,1/50,1/40,1/30,1/25,1/20,1/15,1/8,1/4,1/2,1];
+const ISOS=[100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,16000,20000,25600];
+const APS=[4,4.5,5,5.6,6.3,7.1,8,9,10,11,13,16];
+const near=(arr,v)=>arr.reduce((a,b)=>Math.abs(Math.log2(b/v))<Math.abs(Math.log2(a/v))?b:a);
+const fmtS=t=>t>=1?t+"s":"1/"+Math.round(1/t);
+const isoFor=(ev,N,t)=>100*Math.pow(2,Math.log2(N*N/t)-ev);
+function solvePhoto(c,p){let N=Math.max(p.aperture,GEAR.maxAperture),t=p.shutter,iso=isoFor(c.ev,N,t),note="";
+ // too bright: stop down first, then faster shutter
+ while(iso<GEAR.isoMin&&N<11){N=APS[APS.indexOf(near(APS,N))+1];iso=isoFor(c.ev,N,t)}
+ while(iso<GEAR.isoMin&&t>1/8000){t=STOPS[STOPS.indexOf(near(STOPS,t))-1]||t/2;iso=isoFor(c.ev,N,t)}
+ // too dark: open to f/4, then slow shutter down to subject minimum
+ if(iso>GEAR.isoCleanMax&&N>GEAR.maxAperture){N=GEAR.maxAperture;iso=isoFor(c.ev,N,t)}
+ while(iso>GEAR.isoCleanMax&&t<p.minShutter){t=STOPS[STOPS.indexOf(near(STOPS,t))+1];iso=isoFor(c.ev,N,t)}
+ if(iso>GEAR.isoCleanMax)note="Above ISO 6400 – fine in RAW with denoise; max usable ~12800–25600.";
+ if(iso>GEAR.isoMax){iso=GEAR.isoMax;note="Not enough light even at ISO 25600 – expect underexposure. Add light or accept motion blur."}
+ if(iso<GEAR.isoMin)iso=GEAR.isoMin;
+ return{N:near(APS,N),t:near(STOPS,t),iso:near(ISOS,iso),note}}
+function solveVideo(c,s){const slow=/120p/.test(s.video.res)&&c.ev>=9,fps=slow?100:50,t=1/(2*fps),minIso=S.prof==="log"?800:100;
+ let N=GEAR.maxAperture,iso=isoFor(c.ev,N,t),nd="";
+ const target=s.id==="landscape"?8:4;
+ if(iso<minIso){N=target;iso=isoFor(c.ev,N,t)}
+ if(iso<minIso){const stops=Math.log2(minIso/iso);const nds=[[3,"ND8"],[4,"ND16"],[5,"ND32"],[6,"ND64"],[7,"ND128"],[10,"ND1000"]];const pick=(nds.find(x=>x[0]>=stops)||nds[nds.length-1])[1];nd=`ND filter needed: ~${stops.toFixed(1)} stops (${pick}, or variable ND 2–8 stops) to keep 1/${2*fps}s.`;iso=minIso}
+ if(iso>GEAR.isoMax)iso=GEAR.isoMax;
+ return{fps,t,N:near(APS,N),iso:Math.max(minIso,near(ISOS,iso)),nd,warn:iso>12800?"High ISO for video – noise visible; add light if you can.":""}}
+const row=(k,v)=>`<div class="row"><div class="k">${k}</div><div>${v}</div></div>`;
+function render(){
+ $("m-photo").className=S.mode==="photo"?"on":"";$("m-video").className=S.mode==="video"?"on":"";
+ $("profWrap").style.display=S.mode==="video"?"block":"none";
+ document.querySelectorAll("[data-p]").forEach(b=>b.className="chip"+(b.dataset.p===S.prof?" on":""));
+ chips($("conds"),CONDITIONS,"cond");chips($("subs"),SUBJECTS,"sub");
+ const c=CONDITIONS.find(x=>x.id===S.cond),s=SUBJECTS.find(x=>x.id===S.sub);
+ if(!c||!s){$("out").innerHTML='<div class="card empty">Pick a condition and a subject</div>';return}
+ let h="";
+ if(S.mode==="photo"){const r=solvePhoto(c,s.photo);
+  h+=`<div class="card"><h3>📷 Exposure – ${c.name} · ${s.name}</h3><div class="big"><div><b>${fmtS(r.t)}</b><span>Shutter</span></div><div><b>f/${r.N}</b><span>Aperture</span></div><div><b>${r.iso}</b><span>ISO</span></div></div>
+  ${row("Auto ISO alt",`Manual + Auto ISO, cap at ${r.iso>3200?12800:6400}, min shutter ${fmtS(s.photo.minShutter)}`)}
+  ${row("Drive",s.photo.drive)}${row("IBIS",s.photo.ibis)}${row("Format","RAW (or C-RAW to save space)")}
+  ${r.note?`<div class="row warn">${r.note}</div>`:""}</div>`}
+ else{const r=solveVideo(c,s);
+  h+=`<div class="card"><h3>🎥 Video – ${c.name} · ${s.name}</h3><div class="big"><div><b>1/${2*r.fps}</b><span>Shutter (180°)</span></div><div><b>f/${r.N}</b><span>Aperture</span></div><div><b>${r.iso}</b><span>ISO</span></div></div>
+  ${row("Res / fps",s.video.res+(r.fps===100?" <b>(shutter set for 100p)</b>":""))}
+  ${row("Profile",VIDEO_PROFILE[S.prof])}${row("IS mode",s.video.is)}
+  ${row("Shutter rule","1/(2×fps): 25p→1/50, 50p→1/100, 60p→1/125, 100p→1/200, 120p→1/250")}
+  ${r.nd?`<div class="row warn">${r.nd}</div>`:""}${r.warn?`<div class="row warn">${r.warn}</div>`:""}</div>`}
+ const a=s.af;h+=`<div class="card"><h3>🎯 Autofocus</h3>${row("AF operation",a.servo)}${row("Subject detect",a.detect)}${row("Eye detect",a.eye)}${row("AF area",a.area)}${row("Servo case",a.case)}${row("Pre-cont. AF",a.pre)}<div class="tip">💡 ${c.tip}</div></div>`;
+ $("out").innerHTML=h}
+function save(){localStorage.setItem("r6s",JSON.stringify(S))}
+try{Object.assign(S,JSON.parse(localStorage.getItem("r6s")||"{}"))}catch(e){}
+$("m-photo").onclick=()=>{S.mode="photo";save();render()};$("m-video").onclick=()=>{S.mode="video";save();render()};
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{S.prof=b.dataset.p;save();render()});
+const q=new URLSearchParams(location.search);["mode","cond","sub","prof"].forEach(k=>{if(q.get(k))S[k]=q.get(k)});
+render();
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+</script></body></html>
